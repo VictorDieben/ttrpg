@@ -13,15 +13,15 @@ enable_testing()
 find_package(GTest CONFIG REQUIRED)
 include (GoogleTest)
 
-ADD_EXECUTABLE(SudokuTest
+ADD_EXECUTABLE(TtrpgTest
     "ttrpg_test.cpp"  "test_tools.h")
  
-TARGET_LINK_LIBRARIES(SudokuTest
+TARGET_LINK_LIBRARIES(TtrpgTest
 PRIVATE 
     GTest::gtest 
     GTest::gtest_main
     TtrpgLib
 )
 
-gtest_discover_tests(SudokuTest)
+gtest_discover_tests(TtrpgTest)
  

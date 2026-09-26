@@ -176,11 +176,11 @@ constexpr AbilityModifiers CalculateAbilityModifiers(const AbilityScores& scores
 
 constexpr Level GetTotalLevel(const ClassLevels& levels) { return std::accumulate(levels.begin(), levels.end(), 0); }
 
-constexpr ProficiencyBonus CalculateBonus(const Level level)
+constexpr ProficiencyBonus CalculateProficiencyBonus(const Level level)
 {
     // level should never be lower than 1, and proficiency bonus stops increasing at 20
     const auto clamped = std::clamp(level, 1, 20);
-    return 2 + (clamped % 4);
+    return 2 + ((clamped - 1) / 4);
 }
 
 constexpr SavingThrowModifiers CalculateSavingThrowModifiers(const AbilityModifiers& modifiers,
@@ -201,12 +201,12 @@ struct Character
 
     Level GetLevel() const { return GetTotalLevel(class_levels); }
 
-    ProficiencyBonus proficiency_bonus = CalculateBonus(GetLevel());
+    ProficiencyBonus proficiency_bonus = CalculateProficiencyBonus(GetLevel());
 
     // base score, without bonusses for proficiency/race/items/background/etc
     AbilityScores base_ability_scores{10, 10, 10, 10, 10, 10};
 
-    AbilityModifiers ability_modifiers = CalculateAbilityModifiers(ability_scores, //
+    AbilityModifiers ability_modifiers = CalculateAbilityModifiers(base_ability_scores, //
                                                                    proficiency_bonus);
 
     SavingThrowProficiencies saving_throw_proficiencies{Proficiency::Proficiency,
