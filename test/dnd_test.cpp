@@ -20,8 +20,14 @@ TEST(DND, TestInventory)
 
     auto potion = entt::handle{reg, reg.create()};
     potion.emplace<Name>("potion");
-    backpack.emplace<InventoryItem>();
+    potion.emplace<InventoryItem>();
+
+    EXPECT_EQ(backpack.get<Inventory>().children.size(), 0);
+    EXPECT_TRUE((potion.get<InventoryItem>().parent == entt::null));
 
     InventorySystem system{reg};
     EXPECT_TRUE(system.try_connect(backpack, potion));
+
+    EXPECT_EQ(backpack.get<Inventory>().children.size(), 1);
+    EXPECT_TRUE((potion.get<InventoryItem>().parent == backpack));
 }
