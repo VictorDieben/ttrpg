@@ -1,7 +1,6 @@
 
-#include "ttrpg/definitions_dnd.h"
+#include "ttrpg/dnd/definitions_dnd.h"
 #include <gtest/gtest.h>
-#include <iomanip>
 
 #include "test_tools.h"
 
@@ -20,4 +19,9 @@ TEST(Definitions, TestProficiencyBonus)
 
     EXPECT_EQ(CalculateProficiencyBonus(20), 6);
     EXPECT_EQ(CalculateProficiencyBonus(21), 6);
+}
+
+TEST(Definitions, TestAbilityModifier)
+{
+    EXPECT_EQ(CalculateAbilityModifier(10, 2), 0); // todo
 }

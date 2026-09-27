@@ -5,9 +5,10 @@
 #include <cstdint>
 #include <numeric>
 #include <set>
+#include <tuple>
 #include <vector>
 
-#include "definitions.h"
+#include "ttrpg/base/definitions.h"
 
 namespace tt
 {
@@ -102,32 +103,23 @@ constexpr ClassCathegory Cathegory(const Class cls)
 enum class Skill : std::size_t
 {
     Acrobatics = 0,
-    AnimalHandling,
-    Acrana,
-    Athletics,
-    Deception,
-    History,
-    Insight,
-    Intimidation,
-    Investigation,
-    Medicine,
-    Nature,
-    Perception,
-    Performance,
-    Persuasion,
-    Religion,
-    SleightOfHand,
-    Stealth,
-    Survival
-};
-
-enum class OtherProficiency : std::size_t
-{
-    Armor,
-    Shields,
-    SimpleWeapons,
-    MartialWeapons
-    // todo
+    AnimalHandling = 1,
+    Acrana = 2,
+    Athletics = 3,
+    Deception = 4,
+    History = 5,
+    Insight = 6,
+    Intimidation = 7,
+    Investigation = 8,
+    Medicine = 9,
+    Nature = 10,
+    Perception = 11,
+    Performance = 12,
+    Persuasion = 13,
+    Religion = 14,
+    SleightOfHand = 15,
+    Stealth = 16,
+    Survival = 17
 };
 
 enum class Proficiency : std::size_t
@@ -136,6 +128,15 @@ enum class Proficiency : std::size_t
     None = 0,
     Proficiency = 1,
     Expertise = 2
+};
+
+enum class OtherProficiency : std::size_t // todo: 2 things are called proficiency, fix
+{
+    Armor,
+    Shields,
+    SimpleWeapons,
+    MartialWeapons
+    // todo
 };
 
 using SavingThrowModifiers = std::array<SavingThrowModifier, num_abilities>;
@@ -150,6 +151,93 @@ enum class Language : std::size_t
     Dwarvish
     // todo
 };
+
+enum class CreatureType
+{
+    Aberration,
+    Beast,
+    Celestial,
+    Construct,
+    Dragon,
+    Elemental,
+    Fey,
+    Fiend,
+    Giant,
+    Humanoid,
+    Monstrosity,
+    Ooze,
+    Plant,
+    Undead
+};
+static constexpr std::size_t num_creature_types = 14;
+
+enum class WeaponType
+{
+    BattleAxe,
+    Club,
+    Dagger,
+    Flail,
+    Glaive,
+    GreatClub,
+    GreatSword,
+    Handaxe,
+    Javalin,
+    Lance
+};
+enum class WeaponClass
+{
+    Simple,
+    Martial
+};
+constexpr WeaponClass GetWeaponClass(const WeaponType type)
+{
+    switch(type)
+    {
+    case WeaponType::Club:
+    case WeaponType::Dagger:
+    case WeaponType::GreatClub:
+    case WeaponType::Handaxe:
+    case WeaponType::Javalin:
+        return WeaponClass::Simple;
+
+    default:
+    case WeaponType::BattleAxe:
+    case WeaponType::Flail:
+    case WeaponType::Glaive:
+    case WeaponType::GreatSword:
+    case WeaponType::Lance:
+        return WeaponClass::Martial;
+    }
+}
+
+// move to separate file
+namespace alignment
+{
+enum class GoodEvil : std::int8_t
+{
+    Good = 1,
+    Neutral = 0,
+    Evil = -1
+};
+enum class LawChaos : std::int8_t
+{
+    Lawful = 1,
+    Neutral = 0,
+    Chaotic = -1
+};
+using Alignment = std::pair<LawChaos, GoodEvil>;
+static constexpr Alignment lawful_good = Alignment{LawChaos::Lawful, GoodEvil::Good};
+static constexpr Alignment neutral_good = Alignment{LawChaos::Neutral, GoodEvil::Good};
+static constexpr Alignment chaotic_good = Alignment{LawChaos::Chaotic, GoodEvil::Good};
+
+static constexpr Alignment lawful_neutral = Alignment{LawChaos::Lawful, GoodEvil::Neutral};
+static constexpr Alignment true_neutral = Alignment{LawChaos::Neutral, GoodEvil::Neutral};
+static constexpr Alignment chaotic_neutral = Alignment{LawChaos::Chaotic, GoodEvil::Neutral};
+
+static constexpr Alignment lawful_evil = Alignment{LawChaos::Lawful, GoodEvil::Evil};
+static constexpr Alignment neutral_evil = Alignment{LawChaos::Neutral, GoodEvil::Evil};
+static constexpr Alignment chaotic_evil = Alignment{LawChaos::Chaotic, GoodEvil::Evil};
+} // namespace alignment
 
 using Languages = std::set<Language>; // todo: flat set
 
@@ -196,6 +284,8 @@ constexpr SavingThrowModifiers CalculateSavingThrowModifiers(const AbilityModifi
 
 struct Character
 {
+    CreatureType creature_type{CreatureType::Humanoid};
+    alignment::Alignment alignment = alignment::true_neutral;
 
     ClassLevels class_levels;
 

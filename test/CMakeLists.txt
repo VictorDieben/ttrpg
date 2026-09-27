@@ -14,7 +14,10 @@ find_package(GTest CONFIG REQUIRED)
 include (GoogleTest)
 
 ADD_EXECUTABLE(TtrpgTest
-    "ttrpg_test.cpp"  "test_tools.h")
+    "ttrpg_test.cpp"  
+    "dnd_test.cpp"
+    "test_tools.h"
+)
  
 TARGET_LINK_LIBRARIES(TtrpgTest
 PRIVATE 
