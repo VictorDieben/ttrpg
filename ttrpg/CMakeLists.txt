@@ -7,12 +7,14 @@ cmake_minimum_required (VERSION 3.13)
 
 add_library(TtrpgLib
     "include/ttrpg/ttrpg.h" 
-    "include/ttrpg/dnd/definitions_dnd.h"
+    "include/ttrpg/dnd/definitions.h"
+    "include/ttrpg/dnd/scratch.h" 
     "include/ttrpg/base/definitions.h" 
     "include/ttrpg/base/components.h" 
     "include/ttrpg/dnd.h" 
     "src/ttrpg/ttrpg.cpp"  
-    "src/ttrpg/dnd.cpp"
+    "src/ttrpg/dnd.cpp" 
+    "src/ttrpg/dnd/scratch.cpp"
 )
 
 target_include_directories(TtrpgLib

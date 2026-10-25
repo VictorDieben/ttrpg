@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <string_view>
 
 namespace tt
 {
@@ -35,7 +36,7 @@ constexpr std::uint32_t Sides(const Dice dice)
     }
 }
 
-constexpr const char* to_string(const Dice dice)
+constexpr std::string_view to_string(const Dice dice)
 {
     switch(dice)
     {

@@ -32,9 +32,6 @@ using HitDice = Dice;
 using HitPoints = std::int32_t;
 using TempHitPoints = std::int32_t;
 
-static constexpr std::size_t num_abilities = 6;
-static constexpr std::size_t num_skills = 18;
-
 enum class Ability : std::size_t
 {
     Strength = 0,
@@ -44,6 +41,7 @@ enum class Ability : std::size_t
     Wisdom = 4,
     Charisma = 5
 };
+static constexpr std::size_t num_abilities = 6;
 
 enum class Class : std::size_t
 {
@@ -61,8 +59,9 @@ enum class Class : std::size_t
     Warlock = 11,
     Wizard = 12
 };
+static constexpr std::size_t num_classes = 13;
 
-using ClassLevels = std::array<ClassLevel, 13>;
+using ClassLevels = std::array<ClassLevel, num_classes>;
 
 enum class ClassCathegory
 {
@@ -95,6 +94,7 @@ constexpr ClassCathegory Cathegory(const Class cls)
     case Class::Monk:
     case Class::Rogue:
         return ClassCathegory::Martial;
+
     case Class::Warlock:
         return ClassCathegory::Other;
     }
@@ -121,6 +121,7 @@ enum class Skill : std::size_t
     Stealth = 16,
     Survival = 17
 };
+static constexpr std::size_t num_skills = 18;
 
 enum class Proficiency : std::size_t
 {
@@ -146,11 +147,62 @@ using OtherProficiencies = std::set<OtherProficiency>; // todo: flat set
 
 enum class Language : std::size_t
 {
+    // standard:
     Common,
     Draconic,
-    Dwarvish
-    // todo
+    Dwarvish,
+    Elvish,
+    Giant,
+    Gnomish,
+    Golblin,
+    Halfling,
+    Orc,
+    // exotic:
+    Abyssal,
+    Celestial,
+    DeepSpeech,
+    Infernal,
+    Primordial,
+    Sylvan,
+    UnderCommon
 };
+
+enum class LanguageScript : std::size_t
+{
+    // standard:
+    Common,
+    Dwarvish,
+    Elvish,
+    // exotic
+    Celestial,
+    Draconic,
+    Infernal,
+};
+
+constexpr LanguageScript GetLanguageScript(const Language language)
+{
+    switch(language)
+    {
+    default:
+    case Language::Common:
+    case Language::Halfling:
+        return LanguageScript::Common;
+    case Language::Dwarvish:
+    case Language::Giant:
+    case Language::Gnomish:
+    case Language::Golblin:
+    case Language::Orc:
+        return LanguageScript::Dwarvish;
+    case Language::Elvish:
+        return LanguageScript::Elvish;
+    case Language::Celestial:
+        return LanguageScript::Celestial;
+    case Language::Draconic:
+        return LanguageScript::Draconic;
+    case Language::Infernal:
+        return LanguageScript::Infernal;
+    }
+}
 
 enum class CreatureType
 {
@@ -247,18 +299,22 @@ using AbilityProficiencies = std::array<Proficiency, num_abilities>;
 
 using Skills = std::array<SkillScore, num_skills>;
 
-constexpr AbilityModifier CalculateAbilityModifier(const AbilityScore score, //
-                                                   const ProficiencyBonus bonus)
+constexpr AbilityModifier CalculateAbilityModifier(const AbilityScore score)
 {
-    return {}; // todo
+    // division towards negative infinity (normal "/" rounds towards zero)
+    const auto div_floor = [](const auto a, const auto b) -> auto {
+        const auto division = std::div(a, b);
+        auto corr = (division.rem != 0 && ((division.rem < 0) != (b < 0)));
+        return division.quot - corr;
+    };
+    return std::clamp(div_floor(score - 10, 2), -5, 10);
 }
 
-constexpr AbilityModifiers CalculateAbilityModifiers(const AbilityScores& scores, //
-                                                     const ProficiencyBonus bonus)
+constexpr AbilityModifiers CalculateAbilityModifiers(const AbilityScores& scores)
 {
     AbilityModifiers mods{};
     for(std::size_t i = 0; i < num_abilities; ++i)
-        mods[i] = CalculateAbilityModifier(scores[i], bonus);
+        mods[i] = CalculateAbilityModifier(scores[i]);
     return mods;
 }
 
@@ -271,18 +327,38 @@ constexpr ProficiencyBonus CalculateProficiencyBonus(const Level level)
     return 2 + ((clamped - 1) / 4);
 }
 
+constexpr SavingThrowModifier CalculateSavingThrowModifier(const AbilityModifier modifier,
+                                                           const Proficiency proficiency,
+                                                           const ProficiencyBonus bonus)
+{
+    const auto mod = (modifier - 10) / 2;
+    switch(proficiency)
+    {
+    default:
+    case Proficiency::None:
+        return mod;
+    case Proficiency::Proficiency:
+        return mod + bonus;
+    case Proficiency::Expertise:
+        return mod + (2 * bonus);
+    }
+}
+
 constexpr SavingThrowModifiers CalculateSavingThrowModifiers(const AbilityModifiers& modifiers,
                                                              const SavingThrowProficiencies& proficiencies,
                                                              const ProficiencyBonus bonus)
 {
-    return SavingThrowModifiers{};
+    SavingThrowModifiers mods{};
+    for(std::size_t i = 0; i < num_abilities; ++i)
+        mods[i] = CalculateSavingThrowModifier(modifiers[i], proficiencies[i], bonus);
+    return mods;
 }
 
 // NOTE: this struct is just to get an idea of what has been implemented and still needs to be done.
 // in real code some members of this class should probably be separate ECS components.
 // For instance, not everything that can speak a langauge can also join battle
 
-struct Character
+struct _Character
 {
     CreatureType creature_type{CreatureType::Humanoid};
     alignment::Alignment alignment = alignment::true_neutral;
@@ -296,8 +372,7 @@ struct Character
     // base score, without bonusses for proficiency/race/items/background/etc
     AbilityScores base_ability_scores{10, 10, 10, 10, 10, 10};
 
-    AbilityModifiers ability_modifiers = CalculateAbilityModifiers(base_ability_scores, //
-                                                                   proficiency_bonus);
+    AbilityModifiers ability_modifiers = CalculateAbilityModifiers(base_ability_scores);
 
     SavingThrowProficiencies saving_throw_proficiencies{Proficiency::Proficiency,
                                                         Proficiency::Expertise,

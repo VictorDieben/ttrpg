@@ -2,121 +2,96 @@
 
 #include <array>
 #include <cassert>
-#include <flat_set>
+//#include <flat_set>
+#include <variant>
 #include <vector>
 
 #include <entt/entt.hpp>
 
 #include "ttrpg/base/components.h"
 #include "ttrpg/base/definitions.h"
+#include "ttrpg/base/tree.h"
 
-#include "ttrpg/dnd/definitions_dnd.h"
+#include "ttrpg/dnd/definitions.h"
 
 namespace tt
 {
 namespace dnd
 {
+using Rounds = std::int64_t;
+struct UntilLongRest
+{ };
+struct UntilShortRest
+{ };
+using Duration = std::variant<Rounds, UntilLongRest, UntilShortRest>;
 
-enum class TreeType
+using namespace entt::literals;
+
+static constexpr entt::id_type inventory_id = "inventory"_hs;
+using Inventory = tt::Parent<inventory_id>;
+using InventoryItem = tt::Child<inventory_id>;
+using InventorySystem = tt::Relationship<inventory_id>;
+
+static constexpr entt::id_type traits_id = "traits"_hs;
+using TraitParent = tt::Parent<traits_id>;
+using TraitChild = tt::Child<traits_id>;
+using TraitSystem = tt::Relationship<traits_id>;
+
+//
+//
+//
+
+static constexpr entt::id_type condition_id = "condition"_hs;
+using ConditionParent = tt::Parent<condition_id>;
+using ConditionChild = tt::Child<condition_id>;
+using ConditionSystem = tt::Relationship<condition_id>;
+
+enum class ConditionType
 {
-    Inventory,
-    Following
+    Blinded,
+    Charmed,
+    Deafened,
+    Frightened,
+    Grappled,
+    Incapacitated,
+    Invisible,
+    Paralyzed,
+    Petrified,
+    Poisoned,
+    Prone,
+    Restrained,
+    Stunned,
+    Unconscious,
+
+    Exhaustion1,
+    Exhaustion2,
+    Exhaustion3,
+    Exhaustion4,
+    Exhaustion5,
+    Exhaustion6, // death
 };
 
-template <TreeType T>
-struct Parent
+struct Condition
 {
-    std::flat_set<entt::entity> children;
+    ConditionType type;
+    Duration duration;
 };
 
-template <TreeType T>
-struct Child
+//
+//
+//
+
+enum class CharacterType
 {
-    entt::entity parent{entt::null};
+    Player,
+    NPC
 };
 
-template <TreeType T>
-class Relationship
+struct Character
 {
-public:
-    using Parent = Parent<TreeType::Inventory>;
-    using Child = Child<TreeType::Inventory>;
-
-    Relationship(entt::registry& reg)
-        : reg(reg)
-    {
-        // If a parent is deleted, unparent its children
-        reg.on_destroy<Parent>().connect<&Relationship::OnParentDestroyed>(this);
-
-        // If a child is deleted, tell parent
-        reg.on_destroy<Child>().connect<&Relationship::OnChildDestroyed>(this);
-    }
-
-    bool try_connect(entt::entity parent, entt::entity child)
-    {
-        // if parent is a parent, child is a child, and child has no parent yet,
-        // connect and return true. else return false
-        Child& childComp = reg.get<Child>(child);
-        if(childComp.parent != entt::null)
-            return false;
-
-        Parent& parentComp = reg.get<Parent>(parent);
-        if(parentComp.children.contains(child))
-            return false; // child is already a child of parent (todo: assert?)
-
-        childComp.parent = parent;
-        parentComp.children.insert(child);
-
-        return true;
-    }
-
-    bool try_disconnect(entt::entity parent, entt::entity child)
-    {
-        // if parent is not parent of child, return false
-        Child* childComp = reg.try_get<Child>(child);
-        assert(childComp);
-        if(childComp.parent != parent)
-            return false;
-
-        // if child is not registered to parent, return false
-        Parent* parentComp = reg.try_get<Parent>(parent);
-        assert(parentComp);
-        if(!parentComp->children.contains(child))
-            return false;
-
-        childComp.parent = entt::null;
-        parentComp->children.erase(child);
-        return true;
-    }
-
-private:
-    void OnParentDestroyed(entt::registry& callReg, entt::entity parent)
-    {
-        // todo: assert(callReg == reg);
-        auto& children = reg.get<Parent>(parent).children;
-        for(auto& childId : children)
-        {
-            Child& child = reg.get<Child>(childId);
-            if(child.parent == parent)
-                child.parent = entt::null;
-            else
-                assert(false); // should not happen
-        }
-    }
-
-    void OnChildDestroyed(entt::registry& callReg, entt::entity child)
-    {
-        // todo: assert(callReg == reg);
-        auto parent = reg.get<Child>(child).parent;
-        reg.get<Parent>(parent).children.erase(child);
-    }
-
-    entt::registry& reg;
+    // todo: type of character, player or NPC
+    CharacterType type{CharacterType::Player};
 };
-
-using Inventory = Parent<TreeType::Inventory>;
-using InventoryItem = Child<TreeType::Inventory>;
-using InventorySystem = Relationship<TreeType::Inventory>;
 
 } // namespace dnd
 } // namespace tt
